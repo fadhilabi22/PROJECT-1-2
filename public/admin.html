@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Toko Makanda</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+    <div id="customNotification" class="custom-notification"><p id="customNotificationMessage"></p></div>
+    <div id="confirmOverlay" class="modal-overlay"><div class="confirm-modal-content"><p id="confirmMessage"></p><div class="confirm-buttons"><button id="confirmCancelBtn" class="confirm-btn cancel">Batal</button><button id="confirmOkBtn" class="confirm-btn ok">OK</button></div></div></div>
+
+    <header class="admin-header no-print">
+        <img src="img/makandalogo.png" alt="Makanda Logo" class="logo-img">
+        <div><span id="adminUserGreeting" style="margin-right:15px;"></span><a href="index.html" style="background: #6c757d; margin-right:10px; padding: 8px 12px; color:white; text-decoration: none; border-radius:4px;">Lihat Toko</a><button id="adminLogoutBtn">Logout</button></div>
+    </header>
+
+    <div class="admin-container">
+        <aside class="admin-sidebar no-print">
+            <h2>Menu Navigasi</h2>
+            <ul>
+                <li class="active"><a href="#" id="navOrders"><i class="fas fa-receipt"></i> Kelola Pesanan</a></li>
+                <li><a href="#" id="navProducts"><i class="fas fa-box-open"></i> Kelola Produk</a></li>
+                <li><a href="#" id="navCustomerReport"><i class="fas fa-user-tag"></i> Laporan Riwayat</a></li>
+            </ul>
+        </aside>
+
+        <main class="admin-main-content">
+            <div class="content-header no-print"><h2 id="contentTitle">Kelola Pesanan</h2></div>
+            
+            <div id="ordersContent" style="display:block;">
+                <p class="loading">Memuat daftar pesanan...</p>
+                <table class="orders-table" style="display:none;">
+                    <thead><tr><th>ID Order</th><th>Email Pembeli</th><th>Item Dipesan</th><th>Total</th><th>Metode Bayar</th><th>Tgl. Order</th><th>Status Saat Ini</th><th>Ubah Status</th><th>Aksi Status</th><th>Cetak Resi</th></tr></thead>
+                    <tbody id="ordersTableBody"></tbody>
+                </table>
+                <p class="no-orders" style="display:none;">Belum ada pesanan yang masuk.</p>
+                <p class="error-message" style="display:none; color:red;"></p>
+            </div>
+            
+            <div id="productsContent" style="display:none;">
+                <p class="loading-products">Memuat daftar produk...</p>
+                <table class="products-table" style="display:none;">
+                    <thead><tr><th>ID</th><th>Gambar</th><th>Nama Produk</th><th>Kategori</th><th>Harga</th><th>Stok Saat Ini</th><th>Status Produk</th><th>Aksi Stok</th></tr></thead>
+                    <tbody id="productsTableBody"></tbody>
+                </table>
+                <p class="no-products" style="display:none;">Belum ada produk.</p>
+                <p class="error-message-products" style="display:none; color:red;"></p>
+            </div>
+
+            <div id="customerReportContent" style="display:none;">
+                <div class="report-filters no-print" style="margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 5px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                    <label for="reportMonthFilter"><strong>Filter Bulan:</strong></label>
+                    <select id="reportMonthFilter" class="filter-select">
+                        <option value="0">Semua Bulan</option>
+                        <option value="1">Januari</option>
+                        <option value="2">Februari</option>
+                        <option value="3">Maret</option>
+                        <option value="4">April</option>
+                        <option value="5">Mei</option>
+                        <option value="6">Juni</option>
+                        <option value="7">Juli</option>
+                        <option value="8">Agustus</option>
+                        <option value="9">September</option>
+                        <option value="10">Oktober</option>
+                        <option value="11">November</option>
+                        <option value="12">Desember</option>
+                    </select>
+                    <label for="reportYearFilter"><strong>Tahun:</strong></label>
+                    <select id="reportYearFilter" class="filter-select">
+                        </select>
+                    <button id="applyReportFilterBtn" class="action-btn">Tampilkan</button>
+                    <button id="resetReportFilterBtn" class="action-btn" style="background-color: #6c757d;">Reset Filter</button>
+                </div>
+
+                <div id="customerReportResultContainer" class="printable-area" style="display:none;">
+                    <div class="report-header">
+                        <img src="img/makandalogo.png" alt="Makanda Logo" class="logo-img-receipt">
+                        <h2>Laporan Riwayat Pembelian Pelanggan</h2>
+                        <p id="customerReportInfo"></p><hr>
+                    </div>
+                    <h3>Ringkasan</h3>
+                    <div id="customerReportSummary" class="report-summary-box"></div>
+                    <h3>Detail Pembelian</h3>
+                    <button id="printCustomerReportBtn" class="action-btn no-print" style="margin-bottom: 15px;" disabled>Cetak Laporan (PDF)</button>
+                    <table class="reports-table">
+                        <thead><tr><th>Tgl. Pembelian</th><th>ID Order</th><th>Nama Produk</th><th>Jumlah</th><th>Harga Satuan</th><th>Subtotal</th></tr></thead>
+                        <tbody id="customerReportTableBody"></tbody>
+                    </table>
+                    <p class="no-customer-report-data" style="display:none; text-align: center; padding: 20px;">Tidak ada data untuk periode yang dipilih.</p>
+                </div>
+                <p class="loading-customer-report" style="display:none; text-align: center; padding: 20px;">Membuat laporan pelanggan...</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DEKLARASI SEMUA ELEMEN ---
+        const contentTitleEl = document.getElementById('contentTitle');
+        const adminUserGreetingEl = document.getElementById('adminUserGreeting');
+        const adminLogoutBtn = document.getElementById('adminLogoutBtn');
+        // Elemen Kelola Pesanan
+        const navOrdersBtn = document.getElementById('navOrders');
+        const ordersContentEl = document.getElementById('ordersContent');
+        const ordersTableBody = ordersContentEl.querySelector('#ordersTableBody');
+        const loadingOrdersMsg = ordersContentEl.querySelector('.loading');
+        const errorOrdersMsg = ordersContentEl.querySelector('.error-message');
+        const noOrdersMsg = ordersContentEl.querySelector('.no-orders');
+        // Elemen Kelola Produk
+        const navProductsBtn = document.getElementById('navProducts');
+        const productsContentEl = document.getElementById('productsContent');
+        const loadingProductsMsg = productsContentEl.querySelector('.loading-products');
+        const errorProductsMsg = productsContentEl.querySelector('.error-message-products');
+        const noProductsMsg = productsContentEl.querySelector('.no-products');
+        const productsPagination = document.createElement('div');
+        productsPagination.classList.add('products-pagination');
+        productsContentEl.appendChild(productsPagination);
+
+        const productsTableBody = productsContentEl.querySelector('#productsTableBody');
+        // Elemen Laporan Pelanggan
+        const navCustomerReport = document.getElementById('navCustomerReport');
+        const customerReportContentEl = document.getElementById('customerReportContent');
+        const printCustomerReportBtn = document.getElementById('printCustomerReportBtn');
+        const customerReportResultContainer = document.getElementById('customerReportResultContainer');
+        const customerReportTableBody = document.getElementById('customerReportTableBody');
+        const customerReportSummaryEl = document.getElementById('customerReportSummary');
+        const customerReportInfoEl = document.getElementById('customerReportInfo');
+        const loadingCustomerReportMsg = customerReportContentEl.querySelector('.loading-customer-report');
+        const noCustomerReportDataMsg = customerReportResultContainer.querySelector('.no-customer-report-data');
+        let customerReportData = null;
+        let isAutoTableLoaded = false;
+        
+        // --- NEW: Elemen Filter Laporan ---
+        const reportMonthFilter = document.getElementById('reportMonthFilter');
+        const reportYearFilter = document.getElementById('reportYearFilter');
+        const applyReportFilterBtn = document.getElementById('applyReportFilterBtn');
+        const resetReportFilterBtn = document.getElementById('resetReportFilterBtn');
+        
+        // --- FUNGSI HELPER ---
+        function showCustomNotification(message, type = 'info') {
+            const notification = document.getElementById('customNotification');
+            const notificationMessage = document.getElementById('customNotificationMessage');
+            notificationMessage.textContent = message;
+            notification.className = 'custom-notification show ' + type;
+            setTimeout(() => { notification.classList.remove('show'); }, 3000);
+        }
+
+        function showCustomConfirm(message) {
+            return new Promise((resolve) => {
+                const confirmOverlay = document.getElementById('confirmOverlay');
+                document.getElementById('confirmMessage').textContent = message;
+                confirmOverlay.style.display = 'flex';
+                document.getElementById('confirmOkBtn').onclick = () => { confirmOverlay.style.display = 'none'; resolve(true); };
+                document.getElementById('confirmCancelBtn').onclick = () => { confirmOverlay.style.display = 'none'; resolve(false); };
+            });
+        }
+
+        function formatRupiah(angka) {
+            if (angka === null || isNaN(parseInt(angka))) return 'Rp0';
+            return 'Rp' + parseInt(angka).toLocaleString('id-ID');
+        }
+
+        function getStatusBadgeClass(statusText) {
+            const lowerStatus = (statusText || '').toLowerCase();
+            if (lowerStatus.includes('menunggu pembayaran')) return 'status-menunggu';
+            if (lowerStatus.includes('dikonfirmasi') || lowerStatus.includes('selesai')) return 'status-dikonfirmasi';
+            if (lowerStatus.includes('diproses')) return 'status-diproses';
+            if (lowerStatus.includes('dibatalkan')) return 'status-gagal';
+            return 'status-badge';
+        }
+
+        function getProductStatusBadgeClass(statusText) {
+            const lowerStatus = (statusText || '').toLowerCase();
+            if (lowerStatus === 'tersedia') return 'product-status-tersedia';
+            if (lowerStatus === 'habis') return 'product-status-habis';
+            return 'product-status-badge';
+        }
+        
+        // --- Pengecekan Akses Admin & Logout ---
+        (function checkAdminAccess() {
+            const adminUserEmail = sessionStorage.getItem('userEmail');
+            const adminUserRole = sessionStorage.getItem('userRole');
+            if (adminUserRole !== 'admin') {
+                showCustomNotification('Akses ditolak. Anda bukan admin.', 'error');
+                setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+            } else {
+                if (adminUserGreetingEl) adminUserGreetingEl.textContent = `Admin: ${adminUserEmail.split('@')[0]}`;
+                if (adminLogoutBtn) adminLogoutBtn.addEventListener('click', () => {
+                    sessionStorage.clear();
+                    window.location.href = 'index.html';
+                });
+            }
+        })();
+
+        // --- NAVIGASI ANTAR HALAMAN ---
+        function showContent(activeNav, activeContent) {
+            document.querySelectorAll('.admin-main-content > div').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('aside ul li').forEach(li => li.classList.remove('active'));
+            if (activeContent) activeContent.style.display = 'block';
+            if (activeNav) activeNav.parentElement.classList.add('active');
+        }
+
+        function showOrdersContent() {
+            contentTitleEl.textContent = 'Kelola Pesanan';
+            showContent(navOrdersBtn, ordersContentEl);
+            fetchAllOrders();
+        }
+        function showProductsContent() {
+            contentTitleEl.textContent = 'Kelola Produk';
+            showContent(navProductsBtn, productsContentEl);
+            fetchAllProductsForAdmin();
+        }
+        function showCustomerReportContent() {
+            contentTitleEl.textContent = 'Laporan Riwayat';
+            showContent(navCustomerReport, customerReportContentEl);
+            generateCustomerReport(); 
+        }
+
+        // --- EVENT LISTENERS NAVIGASI ---
+        navOrdersBtn.addEventListener('click', (e) => { e.preventDefault(); showOrdersContent(); });
+        navProductsBtn.addEventListener('click', (e) => { e.preventDefault(); showProductsContent(); });
+        navCustomerReport.addEventListener('click', (e) => { e.preventDefault(); showCustomerReportContent(); });
+        
+        
+        // --- LOGIKA KELOLA PESANAN ---
+        async function fetchAllOrders() {
+             const loadingMsg = ordersContentEl.querySelector('.loading');
+            const errorMsg = ordersContentEl.querySelector('.error-message');
+            const noMsg = ordersContentEl.querySelector('.no-orders');
+            const table = ordersContentEl.querySelector('table.orders-table');
+            
+            loadingMsg.style.display = 'block';
+            errorMsg.style.display = 'none';
+            noMsg.style.display = 'none';
+            table.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/order/all');
+                if (!response.ok) throw new Error((await response.json()).message || 'Gagal mengambil data');
+                const data = await response.json();
+                if (data.orders && data.orders.length > 0) {
+                    displayOrders(data.orders);
+                    table.style.display = 'table';
+                } else {
+                    noMsg.style.display = 'block';
+                }
+            } catch (err) {
+                errorMsg.textContent = `Gagal memuat pesanan: ${err.message}`;
+                errorMsg.style.display = 'block';
+            } finally {
+                loadingMsg.style.display = 'none';
+            }
+        }
+        
+        function displayOrders(orders) {
+            ordersTableBody.innerHTML = '';
+            orders.forEach(order => {
+                const row = ordersTableBody.insertRow();
+                const itemsHtml = (order.items || []).map(item => `<li>${item.name} (${formatRupiah(item.price)} x ${item.quantity})</li>`).join('');
+                const paymentMethod = (order.payment_method || 'N/A').replace(/_/g, ' ');
+                const isPaid = (order.status || '').toLowerCase().includes('dikonfirmasi') || (order.status || '').toLowerCase().includes('diproses') || (order.status || '').toLowerCase().includes('selesai');
+
+                row.innerHTML = `
+                    <td>${order.id}</td><td>${order.user_email}</td>
+                    <td><ul class="order-items-list" style="margin:0; padding-left:15px;">${itemsHtml || '<li>Tidak ada detail item</li>'}</ul></td>
+                    <td>${formatRupiah(order.total)}</td><td>${paymentMethod}</td>
+                    <td>${new Date(order.created_at).toLocaleString('id-ID')}</td>
+                    <td><span class="status-badge ${getStatusBadgeClass(order.status)}">${order.status || 'N/A'}</span></td>
+                    <td><select class="status-select">
+                        <option value="Menunggu Pembayaran" ${order.status.startsWith('Menunggu Pembayaran') ? 'selected' : ''}>Menunggu Pembayaran</option>
+                        <option value="Pembayaran Dikonfirmasi" ${order.status === 'Pembayaran Dikonfirmasi' ? 'selected' : ''}>Pembayaran Dikonfirmasi</option>
+                        <option value="Pesanan Diproses" ${order.status === 'Pesanan Diproses' ? 'selected' : ''}>Pesanan Diproses</option>
+                        <option value="Selesai" ${order.status === 'Selesai' ? 'selected' : ''}>Selesai</option>
+                        <option value="Dibatalkan" ${order.status === 'Dibatalkan' ? 'selected' : ''}>Dibatalkan</option>
+                    </select></td>
+                    <td><button class="update-status-btn action-btn">Update</button></td>
+                    <td><button class="print-receipt-btn" data-order-id="${order.id}" ${!isPaid ? 'disabled' : ''}>Cetak Resi</button></td>
+                `;
+
+                row.querySelector('.update-status-btn').addEventListener('click', async (e) => {
+                    const btn = e.target;
+                    const newStatus = row.querySelector('.status-select').value;
+                    if (await showCustomConfirm(`Yakin ubah status Order #${order.id} menjadi "${newStatus}"?`)) {
+                        btn.textContent = '...'; btn.disabled = true;
+                        try {
+                            const res = await fetch(`/api/order/${order.id}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
+                            const result = await res.json();
+                            if (!res.ok) throw new Error(result.message);
+                            showCustomNotification(result.message, 'success');
+                            fetchAllOrders();
+                        } catch (err) {
+                            showCustomNotification(`Error: ${err.message}`, 'error');
+                        } finally {
+                            btn.textContent = 'Update'; btn.disabled = false;
+                        }
+                    }
+                });
+            });
+        }
+        
+        ordersTableBody.addEventListener('click', async (event) => {
+            if (event.target.classList.contains('print-receipt-btn')) {
+                const button = event.target;
+                const orderId = button.dataset.orderId;
+                button.textContent = '...'; button.disabled = true;
+                try {
+                    const response = await fetch(`/api/order/${orderId}/details`);
+                    if (!response.ok) throw new Error((await response.json()).message);
+                    await generateAndPrintReceipt(await response.json());
+                } catch (err) {
+                    showCustomNotification(`Gagal cetak: ${err.message}`, 'error');
+                } finally {
+                    button.textContent = 'Cetak Resi'; button.disabled = false;
+                }
+            }
+        });
+
+        async function generateAndPrintReceipt(order) {
+            const toDataURL = url => fetch(url).then(r => r.blob()).then(blob => new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            }));
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', [80, 140]);
+            let y = 5;
+            
+            try {
+                const logoDataUrl = await toDataURL('img/makandalogo.png');
+                const img = new Image();
+                img.src = logoDataUrl;
+                await img.decode();
+                const logoHeight = img.height * 30 / img.width;
+                pdf.addImage(logoDataUrl, 'PNG', (80 - 30) / 2, y, 30, logoHeight, undefined, 'MEDIUM');
+                y += logoHeight + 2;
+            } catch (e) {
+                pdf.setFont('helvetica', 'bold').setFontSize(12).text('Toko Makanda', 40, y + 5, { align: 'center' });
+                y += 10;
+            }
+            
+            pdf.setFont('helvetica', 'normal').setFontSize(7).text("Jalan Nikel, Bugel Mas Indah, Karawaci, Tangerang", 40, y, { align: 'center' });
+            y += 4; pdf.line(5, y, 75, y); y += 4;
+            pdf.setFontSize(8);
+            pdf.text(`ID Order: #${order.id}`, 5, y);
+            pdf.text(`Kasir: Admin`, 75, y, { align: 'right' }); y += 4;
+            pdf.text(`Tanggal: ${new Date(order.created_at).toLocaleString('id-ID')}`, 5, y); y += 4;
+            if (order.shipping_details) {
+                pdf.text(`Pelanggan: ${order.shipping_details.name}`, 5, y); y+=4;
+            }
+            pdf.line(5, y, 75, y); y += 4;
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Item', 5, y); pdf.text('Qty', 45, y); pdf.text('Harga', 75, y, { align: 'right' }); y += 4;
+            pdf.setFont('helvetica', 'normal');
+            (order.items || []).forEach(item => {
+                if (y > 125) { pdf.addPage(); y = 10; }
+                pdf.text(item.name, 5, y, { maxWidth: 38 });
+                pdf.text(item.quantity.toString(), 45, y);
+                pdf.text(formatRupiah(item.price * item.quantity), 75, y, { align: 'right' }); y += 4;
+            });
+            pdf.line(5, y, 75, y); y += 4;
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('TOTAL', 5, y); pdf.text(formatRupiah(order.total), 75, y, { align: 'right' }); y += 4;
+            pdf.text('Metode Bayar:', 5, y); pdf.text((order.payment_method || 'N/A').replace(/_/g, ' '), 75, y, { align: 'right' });
+            y += 8;
+            pdf.setFontSize(7).text('Terima kasih telah berbelanja!', 40, y, { align: 'center' });
+            pdf.save(`Resi_Makanda_${order.id}.pdf`);
+        }
+
+    // --- MODIFIED BLOCK: LOGIKA KELOLA PRODUK ---
+    async function fetchAllProductsForAdmin(page = 1) {
+        loadingProductsMsg.style.display = 'block';
+        errorProductsMsg.style.display = 'none';
+        noProductsMsg.style.display = 'none';
+        productsTableBody.parentElement.style.display = 'none';
+        productsPagination.innerHTML = '';
+
+        try {
+           const response = await fetch(`/api/order/products?page=${page}&limit=25`);
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.message || 'Gagal mengambil data produk.');
+            }
+            const data = await response.json();
+            if (data.products && data.products.length > 0) {
+                displayProductsForAdmin(data);
+                productsTableBody.parentElement.style.display = 'table';
+            } else {
+                noProductsMsg.style.display = 'block';
+            }
+        } catch (err) {
+            errorProductsMsg.textContent = `Gagal memuat produk: ${err.message}`;
+            errorProductsMsg.style.display = 'block';
+        } finally {
+            loadingProductsMsg.style.display = 'none';
+        }
+    }
+
+    function displayProductsForAdmin(data) {
+        productsTableBody.innerHTML = '';
+        data.products.forEach(product => {
+            const statusText = product.stock > 0 ? 'Tersedia' : 'Habis';
+            const row = productsTableBody.insertRow();
+            row.dataset.productId = product.id; 
+            
+            // MODIFIED: Menghapus tombol "Hapus"
+            row.innerHTML = `
+                <td>${product.id}</td>
+                <td><img src="${product.image_url || 'img/placeholder.png'}" alt="${product.name}" class="product-img-admin"></td>
+                <td class="product-name">${product.name}</td>
+                <td>${product.category}</td>
+                <td>${formatRupiah(product.price)}</td>
+                <td><input type="number" class="stock-input" value="${product.stock}" min="0"></td>
+                <td><span class="product-status-badge ${getProductStatusBadgeClass(statusText)}">${statusText}</span></td>
+                <td>
+                    <button class="update-stock-btn action-btn">Update Stok</button>
+                </td>
+            `;
+        });
+        renderProductsPagination(data.currentPage, data.totalPages);
+    }
+
+    // MODIFIED: Fungsi paginasi diubah untuk menggunakan addEventListener, agar berfungsi dengan benar.
+    function renderProductsPagination(currentPage, totalPages) {
+        productsPagination.innerHTML = '';
+        if (totalPages <= 1) return;
+
+        // Tombol Sebelumnya
+        const prevButton = document.createElement('button');
+        prevButton.className = 'pagination-btn';
+        prevButton.textContent = '‹ Sebelumnya';
+        if (currentPage === 1) {
+            prevButton.disabled = true;
+        }
+        prevButton.addEventListener('click', () => fetchAllProductsForAdmin(currentPage - 1));
+        productsPagination.appendChild(prevButton);
+
+        // Info Halaman
+        const pageInfo = document.createElement('span');
+        pageInfo.className = 'pagination-info';
+        pageInfo.textContent = `Halaman ${currentPage} dari ${totalPages}`;
+        productsPagination.appendChild(pageInfo);
+
+        // Tombol Berikutnya
+        const nextButton = document.createElement('button');
+        nextButton.className = 'pagination-btn';
+        nextButton.textContent = 'Berikutnya ›';
+        if (currentPage === totalPages) {
+            nextButton.disabled = true;
+        }
+        nextButton.addEventListener('click', () => fetchAllProductsForAdmin(currentPage + 1));
+        productsPagination.appendChild(nextButton);
+    }
+    
+    // MODIFIED: Event listener hanya untuk update stok, karena tombol hapus sudah tidak ada
+    productsTableBody.addEventListener('click', async (e) => {
+        const target = e.target;
+        if (target.classList.contains('update-stock-btn')) {
+            const row = target.closest('tr');
+            if (!row) return;
+
+            const productId = row.dataset.productId;
+            const stockInput = row.querySelector('.stock-input');
+            const newStock = parseInt(stockInput.value);
+            await updateProductStock(productId, newStock);
+        }
+    });
+
+    async function updateProductStock(productId, newStock) {
+        if (isNaN(newStock) || newStock < 0) {
+            return showCustomNotification('Stok harus berupa angka positif.', 'error');
+        }
+        if (!await showCustomConfirm(`Yakin ubah stok produk #${productId} menjadi ${newStock}?`)) return;
+        
+        try {
+            const res = await fetch(`/api/products/${productId}/stock`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ newStock })
+            });
+            const result = await res.json();
+            if (!res.ok) throw new Error(result.message);
+            showCustomNotification(result.message, 'success');
+            // Muat ulang halaman saat ini setelah update
+            const currentPage = parseInt(productsPagination.querySelector('.pagination-info')?.textContent.match(/(\d+)/)[0] || '1');
+            fetchAllProductsForAdmin(currentPage); 
+        } catch (err) {
+            showCustomNotification(`Gagal update stok: ${err.message}`, 'error');
+        }
+    }
+    
+    // --- AKHIR BLOK MODIFIKASI PRODUK ---
+
+        // --- LOGIKA LAPORAN RIWAYAT PELANGGAN ---
+        function populateYearFilter() {
+            const currentYear = new Date().getFullYear();
+            reportYearFilter.innerHTML = '<option value="0">Semua Tahun</option>';
+            for (let i = 0; i < 5; i++) {
+                const year = currentYear - i;
+                reportYearFilter.innerHTML += `<option value="${year}">${year}</option>`;
+            }
+        }
+        
+        async function generateCustomerReport() {
+            loadingCustomerReportMsg.style.display = 'block';
+            customerReportResultContainer.style.display = 'none';
+            printCustomerReportBtn.disabled = true;
+
+            const month = reportMonthFilter.value;
+            const year = reportYearFilter.value;
+
+            if (year === '0' && month !== '0') {
+                reportMonthFilter.value = '0';
+                showCustomNotification("Pilih tahun terlebih dahulu untuk filter per bulan.", "info");
+                loadingCustomerReportMsg.style.display = 'none';
+                return;
+            }
+
+            const params = new URLSearchParams();
+            if (year !== '0') params.append('year', year);
+            if (month !== '0') params.append('month', month);
+            const queryString = params.toString();
+
+            try {
+                const response = await fetch(`/api/order/customer-report${queryString ? '?' + queryString : ''}`);
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Gagal mengambil data.');
+                displayCustomerReport(data, year, month);
+            } catch (err) {
+                showCustomNotification(`Error: ${err.message}`, 'error');
+            } finally {
+                loadingCustomerReportMsg.style.display = 'none';
+            }
+        }
+
+        function displayCustomerReport(data, year, month) {
+            customerReportResultContainer.style.display = 'block';
+            customerReportData = data;
+            const { summary, items } = data;
+
+            const monthNames = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            let periodText = "Menampilkan Seluruh Riwayat Transaksi";
+            if (year !== '0') {
+                periodText = `Periode: Tahun ${year}`;
+                if (month !== '0') {
+                    periodText = `Periode: ${monthNames[parseInt(month)]} ${year}`;
+                }
+            }
+            customerReportInfoEl.textContent = periodText;
+
+            customerReportSummaryEl.innerHTML = `
+                <div class="summary-item"><h4>Total Pendapatan</h4><p>${formatRupiah(summary.totalSpending)}</p></div>
+                <div class="summary-item"><h4>Total Transaksi</h4><p>${summary.totalTransactions}</p></div>
+                <div class="summary-item"><h4>Total Item Terjual</h4><p>${summary.totalItems}</p></div>
+            `;
+            
+            printCustomerReportBtn.disabled = (items || []).length === 0;
+            customerReportTableBody.innerHTML = '';
+            
+            if ((items || []).length === 0) {
+                noCustomerReportDataMsg.style.display = 'block';
+                return;
+            }
+
+            noCustomerReportDataMsg.style.display = 'none';
+            items.forEach(item => {
+                const row = customerReportTableBody.insertRow();
+                const subtotal = item.item_price * item.quantity;
+                row.innerHTML = `
+                    <td>${new Date(item.created_at).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'})}</td>
+                    <td>${item.order_id}</td>
+                    <td>${item.item_name}</td>
+                    <td>${item.quantity}</td>
+                    <td>${formatRupiah(item.item_price)}</td>
+                    <td>${formatRupiah(subtotal)}</td>
+                `;
+            });
+        }
+        
+        async function downloadCustomerReportAsPDF() {
+            if (!customerReportData || !(customerReportData.items || []).length) {
+                showCustomNotification("Data laporan tidak ditemukan untuk dicetak.", "error");
+                return;
+            }
+            printCustomerReportBtn.disabled = true;
+            printCustomerReportBtn.textContent = 'Membuat PDF...';
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const { summary, items } = customerReportData;
+            const pageMargin = 15;
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            let y = pageMargin;
+
+            const toDataURL = url => fetch(url).then(r=>r.blob()).then(blob=>new Promise((res,rej)=>{const reader=new FileReader();reader.onloadend=()=>res(reader.result);reader.onerror=rej;reader.readAsDataURL(blob);}));
+
+            try {
+                try {
+                    const logoDataUrl = await toDataURL('img/makandalogo.png');
+                    pdf.addImage(logoDataUrl, 'PNG', (pageWidth - 40) / 2, y, 40, 10, undefined, 'MEDIUM');
+                    y += 15;
+                } catch (e) { y += 5; }
+
+                pdf.setFont('helvetica', 'normal').setFontSize(9).text("Jalan Nikel, Bugel Mas Indah, Karawaci, Tangerang", pageWidth / 2, y, { align: 'center' });
+                y += 10;
+                
+                pdf.setFont('helvetica', 'bold').setFontSize(16).text('Laporan Riwayat Pembelian', pageWidth / 2, y, { align: 'center' });
+                y += 6;
+                
+                const monthVal = reportMonthFilter.value;
+                const yearVal = reportYearFilter.value;
+                const monthNames = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+                let periodText = "Periode: Semua Riwayat";
+                if (yearVal !== '0') {
+                    periodText = `Periode: Tahun ${yearVal}`;
+                    if (monthVal !== '0') {
+                        periodText = `Periode: ${monthNames[parseInt(monthVal)]} ${yearVal}`;
+                    }
+                }
+                pdf.setFontSize(11).setFont('helvetica', 'normal').text(periodText, pageWidth / 2, y, { align: 'center' });
+                y += 10;
+
+                pdf.autoTable({
+                    startY: y,
+                    head: [['Total Pendapatan', 'Total Transaksi', 'Total Item Terjual']],
+                    body: [[formatRupiah(summary.totalSpending), summary.totalTransactions, summary.totalItems]],
+                    theme: 'grid',
+                    headStyles: { fillColor: [22, 160, 133], halign: 'center' },
+                    bodyStyles: { halign: 'center' },
+                    margin: { left: pageMargin, right: pageMargin }
+                });
+                y = pdf.autoTable.previous.finalY + 10;
+
+                pdf.autoTable({
+                    startY: y,
+                    head: [['Tanggal', 'ID Order', 'Nama Produk', 'Jml', 'Harga Satuan', 'Subtotal']],
+                    body: items.map(item => [
+                        new Date(item.created_at).toLocaleDateString('id-ID'),
+                        item.order_id,
+                        item.item_name,
+                        item.quantity,
+                        formatRupiah(item.item_price),
+                        formatRupiah(item.item_price * item.quantity)
+                    ]),
+                    theme: 'striped',
+                    headStyles: { fillColor: [44, 62, 80] },
+                    columnStyles: {
+                        0: { halign: 'center', cellWidth: 25 },
+                        1: { halign: 'center', cellWidth: 20 },
+                        2: { halign: 'left', cellWidth: 'auto' },
+                        3: { halign: 'center', cellWidth: 15 },
+                        4: { halign: 'right', cellWidth: 30 },
+                        5: { halign: 'right', cellWidth: 30 }
+                    },
+                    margin: { left: pageMargin, right: pageMargin }
+                });
+
+                pdf.save(`Laporan_Riwayat_Makanda_${new Date().getTime()}.pdf`);
+
+            } catch (error) {
+                console.error("Gagal membuat PDF Laporan:", error);
+                showCustomNotification("Gagal membuat PDF. Cek console untuk detail.", 'error');
+            } finally {
+                printCustomerReportBtn.disabled = false;
+                printCustomerReportBtn.textContent = 'Cetak Laporan (PDF)';
+            }
+        }
+    
+        applyReportFilterBtn.addEventListener('click', generateCustomerReport);
+        
+        resetReportFilterBtn.addEventListener('click', () => {
+            reportMonthFilter.value = '0';
+            reportYearFilter.value = '0';
+            generateCustomerReport();
+        });
+        
+        printCustomerReportBtn.addEventListener('click', () => {
+            if (printCustomerReportBtn.disabled) return;
+
+            if (isAutoTableLoaded) {
+                downloadCustomerReportAsPDF();
+            } else {
+                const autotableScript = document.createElement('script');
+                autotableScript.src = 'https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.js';
+                document.head.appendChild(autotableScript);
+
+                autotableScript.onload = () => {
+                    isAutoTableLoaded = true;
+                    downloadCustomerReportAsPDF();
+                };
+            }
+        });
+
+        // --- INISIALISASI ---
+        populateYearFilter();
+        showOrdersContent();
+    });
+</script>
+</body>
+</html>
