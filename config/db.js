@@ -1,18 +1,16 @@
 const mysql = require('mysql2');
-require('dotenv').config();
+require('dotenv').config(); // ini penting agar bisa baca .env
 
-// WAJIB: Ganti createConnection menjadi createPool untuk Railway
-const pool = mysql.createPool({
-    host: process.env.DB_HOST,       // Ambil dari variabel environment Railway
-    user: process.env.DB_USER,       // Ambil dari variabel environment Railway
-    password: process.env.DB_PASSWORD, // Ambil dari variabel environment Railway
-    database: process.env.DB_NAME,   // Ambil dari variabel environment Railway
-    waitForConnections: true,
-    connectionLimit: 10,             // Jumlah koneksi yang dikelola pool
-    queueLimit: 0
+const db = mysql.createConnection({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
 });
 
-console.log('Connection pool untuk Railway berhasil dibuat.');
+db.connect((err) => {
+    if (err) throw err;
+    console.log('Terhubung ke MySQL');
+});
 
-// Ekspor pool agar bisa dipakai di seluruh aplikasi
-module.exports = pool;
+module.exports = db;
