@@ -1,15 +1,16 @@
 const mysql = require('mysql2');
-require('dotenv').config();
+require('dotenv').config(); // ini penting agar bisa baca .env
 
-const pool = mysql.createPool({
+const db = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    waitForConnections: true,
-    connectionLimit: 10,   // Atur sesuai kebutuhan
-    queueLimit: 0
+    database: process.env.DB_NAME
 });
 
-const promisePool = pool.promise();
-module.exports = promisePool;
+db.connect((err) => {
+    if (err) throw err;
+    console.log('Terhubung ke MySQL');
+});
+
+module.exports = db;
